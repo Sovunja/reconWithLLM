@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.ID}} — recon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <span class="brand-mark">▮</span>
+            <a href="/" class="brand-name">recon</a>
+            <span class="brand-meta">v1.0 / pentest reconnaissance</span>
+        </div>
+    </header>
+
+    <main class="content">
+
+    <div class="breadcrumb">
+        <a href="/">← все сканы</a>
+    </div>
+
+    <section class="panel panel-primary">
+        <div class="panel-head panel-head-row">
+            <div>
+                <h1 class="panel-title cell-mono">{{.ID}}</h1>
+                <p class="panel-sub">Запущен в {{formatTime .StartedAt}}</p>
+            </div>
+            <a class="btn btn-ghost" href="/scan-json/{{.ID}}" download>
+                <span class="btn-glyph">⬇</span>
+                <span>Скачать JSON</span>
+            </a>
+        </div>
+
+        <dl class="meta">
+            <div class="meta-item">
+                <dt>Цель</dt>
+                <dd class="cell-mono">{{.Target}}</dd>
+            </div>
+            <div class="meta-item">
+                <dt>Сценарий</dt>
+                <dd>{{.Scenario}}</dd>
+            </div>
+            <div class="meta-item">
+                <dt>Шагов в pipeline</dt>
+                <dd>{{len .Steps}}</dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="panel"
+            hx-get="/scan-status/{{.ID}}"
+            hx-trigger="load, every 1s"
+            hx-swap="innerHTML">
+        <div class="empty"><span>загрузка статуса…</span></div>
+    </section>
+
+    <section class="panel"
+            hx-get="/scan-data/{{.ID}}"
+            hx-trigger="load, every 2s"
+            hx-swap="innerHTML">
+        <div class="empty"><span>загрузка данных…</span></div>
+    </section>
+
+    <section id="qa-section" class="panel"
+            hx-get="/scan-history/{{.ID}}"
+            hx-trigger="load"
+            hx-swap="innerHTML">
+        <div class="empty"><span>загрузка Q&A…</span></div>
+    </section>
+
+    </main>
+</body>
+</html>

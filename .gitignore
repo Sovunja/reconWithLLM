@@ -1,0 +1,14 @@
+# Данные сканирований - они большие и не нужны в репозитории
+data/
+
+*.exe
+recon.exe
+
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+
+.env
+*.local

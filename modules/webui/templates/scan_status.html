@@ -1,0 +1,39 @@
+<div class="panel-head panel-head-row">
+    <h2 class="panel-title panel-title-sm">Статус выполнения</h2>
+    <span class="status status-{{.Status}}">{{.Status}}</span>
+</div>
+
+<ol class="pipeline">
+    {{$current := .CurrentStep}}
+    {{$status := .Status}}
+    {{$reachedCurrent := false}}
+    {{range .Steps}}
+        {{if eq . $current}}
+            {{$reachedCurrent = true}}
+            <li class="step step-active">
+                <span class="step-marker">▶</span>
+                <span class="step-name cell-mono">{{.}}</span>
+                <span class="step-state">выполняется</span>
+            </li>
+        {{else if $reachedCurrent}}
+            <li class="step step-pending">
+                <span class="step-marker">○</span>
+                <span class="step-name cell-mono">{{.}}</span>
+                <span class="step-state">ожидает</span>
+            </li>
+        {{else}}
+            <li class="step step-done">
+                <span class="step-marker">✓</span>
+                <span class="step-name cell-mono">{{.}}</span>
+                <span class="step-state">выполнен</span>
+            </li>
+        {{end}}
+    {{end}}
+</ol>
+
+{{if .Error}}
+<div class="error-box">
+    <span class="error-label">Ошибка:</span>
+    <code>{{.Error}}</code>
+</div>
+{{end}}

@@ -1,0 +1,8 @@
+data/
+*.exe
+*.dll
+.vscode/
+.idea/
+.git/
+.gitignore
+README.md

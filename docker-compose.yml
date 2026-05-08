@@ -1,0 +1,63 @@
+services:
+  juiceshop:
+    image: bkimminich/juice-shop:v19.2.1
+    container_name: juiceshop
+    ports:
+      - "3000:3000"
+    networks:
+      - recon-net
+
+  # Ollama — локальная LLM (Llama 3.1 8B Instruct).
+  # Использует GPU через NVIDIA Container Toolkit.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      # Сохраняем скачанные модели на хосте — иначе при каждом
+      # пересоздании контейнера придётся качать ~5 ГБ заново.
+      - ollama_models:/root/.ollama
+    networks:
+      - recon-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  recon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recon
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - RECON_ADDR=:8080
+      - RECON_DATA_DIR=/data
+      # Адрес ollama в Docker-сети (имя контейнера + порт API).
+      - RECON_OLLAMA_URL=http://ollama:11434
+    networks:
+      - recon-net
+    depends_on:
+      - juiceshop
+      - ollama
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+
+networks:
+  recon-net:
+    driver: bridge

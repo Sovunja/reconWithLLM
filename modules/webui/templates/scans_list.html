@@ -1,0 +1,31 @@
+{{if not .}}
+<div class="empty">
+    <span class="empty-glyph">∅</span>
+    <span>Сканов ещё не было</span>
+</div>
+{{else}}
+<table class="scans">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Цель</th>
+            <th>Сценарий</th>
+            <th>Статус</th>
+            <th>Длительность</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .}}
+        <tr>
+            <td class="cell-mono cell-id">{{.ID}}</td>
+            <td class="cell-mono">{{.Target}}</td>
+            <td>{{.Scenario}}</td>
+            <td><span class="status status-{{.Status}}">{{.Status}}{{if .CurrentStep}} · {{.CurrentStep}}{{end}}</span></td>
+            <td class="cell-mono">{{formatDuration .Duration}}</td>
+            <td><a class="btn btn-ghost btn-sm" href="/scan/{{.ID}}">открыть →</a></td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

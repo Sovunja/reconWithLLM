@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление — recon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <span class="brand-mark">▮</span>
+            <a href="/" class="brand-name">recon</a>
+            <span class="brand-meta">v1.0 / pentest reconnaissance</span>
+        </div>
+    </header>
+
+    <main class="content">
+
+    <section class="panel panel-primary">
+        <div class="panel-head">
+            <h1 class="panel-title">Запустить разведку</h1>
+            <p class="panel-sub">Конфигурация автоматического сбора исходной информации</p>
+        </div>
+
+        <form class="form" hx-post="/scan/start" hx-swap="none">
+            <div class="form-row">
+                <label class="field">
+                    <span class="field-label">Целевой URL</span>
+                    <input class="field-input" type="text" name="target"
+                           placeholder="http://juiceshop:3000" required
+                           value="http://juiceshop:3000">
+                    <span class="field-hint">Имя контейнера или внешний адрес</span>
+                </label>
+            </div>
+
+            <div class="form-row form-row-split">
+                <label class="field">
+                    <span class="field-label">Сценарий</span>
+                    <select class="field-input" name="scenario" required>
+                        {{range .Scenarios}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{end}}
+                    </select>
+                    <span class="field-hint">Стратегия использования ИИ</span>
+                </label>
+
+                <label class="field">
+                    <span class="field-label">Глубина обхода</span>
+                    <input class="field-input" type="number" name="depth"
+                           min="1" max="5" value="2">
+                    <span class="field-hint">Уровни рекурсии для hakrawler</span>
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-glyph">▸</span>
+                    <span>Запустить</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head panel-head-row">
+            <h2 class="panel-title panel-title-sm">История сканов</h2>
+            <span class="badge-count">{{len .Scans}}</span>
+        </div>
+
+        <div hx-get="/scans" hx-trigger="load, every 2s" hx-swap="innerHTML">
+            <div class="empty">
+                <span class="empty-glyph">…</span>
+                <span>загрузка</span>
+            </div>
+        </div>
+    </section>
+
+    </main>
+</body>
+</html>

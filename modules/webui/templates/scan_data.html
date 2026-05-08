@@ -1,0 +1,237 @@
+<div class="panel-head">
+    <h2 class="panel-title panel-title-sm">Собранные данные</h2>
+</div>
+
+{{$data := .Snapshot}}
+{{if not $data}}
+<div class="empty">
+    <span class="empty-glyph">…</span>
+    <span>Данные пока не собраны</span>
+</div>
+{{else}}
+<div class="data-grid">
+
+    {{if hasKey $data "dns_records"}}
+    <div class="data-card data-card-wide">
+        <div class="data-card-head">
+            <span class="data-card-title">DNS-разведка (A / MX / NS / TXT)</span>
+            <span class="data-card-count">{{len (index $data "dns_records")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "dns_records")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "mail_services"}}
+    <div class="data-card data-card-wide">
+        <div class="data-card-head">
+            <span class="data-card-title">Почтовые сервисы</span>
+            <span class="data-card-count">{{len (index $data "mail_services")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "mail_services")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "subdomains"}}
+    <div class="data-card">
+        <div class="data-card-head">
+            <span class="data-card-title">Поддомены</span>
+            <span class="data-card-count">{{len (index $data "subdomains")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "subdomains")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "endpoints"}}
+    <div class="data-card">
+        <div class="data-card-head">
+            <span class="data-card-title">Эндпоинты (краулер + wordlist)</span>
+            <span class="data-card-count">{{len (index $data "endpoints")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "endpoints")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "http_services"}}
+    <div class="data-card">
+        <div class="data-card-head">
+            <span class="data-card-title">HTTP-сервисы (httpx)</span>
+            <span class="data-card-count">{{len (index $data "http_services")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "http_services")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "fetched_responses"}}
+    <div class="data-card">
+        <div class="data-card-head">
+            <span class="data-card-title">Скачанные ответы (response_fetcher)</span>
+            <span class="data-card-count">{{len (index $data "fetched_responses")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "fetched_responses")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "html_parsed"}}
+    <div class="data-card data-card-wide">
+        <div class="data-card-head">
+            <span class="data-card-title">HTML-структура (формы, meta, комментарии)</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "html_parsed")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "extracted_content"}}
+    <div class="data-card data-card-wide">
+        <div class="data-card-head">
+            <span class="data-card-title">Извлечённый контент (email, телефоны, технологии)</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "extracted_content")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "validated_endpoints"}}
+    <div class="data-card data-card-wide">
+        <div class="data-card-head">
+            <span class="data-card-title">Проверенные API-эндпоинты</span>
+            <span class="data-card-count">{{len (index $data "validated_endpoints")}}</span>
+        </div>
+        <pre class="data-card-body">{{json (index $data "validated_endpoints")}}</pre>
+    </div>
+    {{end}}
+
+    {{if hasKey $data "ai_analysis"}}
+    {{$ai := index $data "ai_analysis"}}
+    <div class="data-card data-card-wide ai-card">
+        <div class="data-card-head">
+            <span class="data-card-title">Анализ ИИ</span>
+        </div>
+        <div class="ai-body">
+            {{if $ai.summary}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">Сводка</h3>
+                    <p class="ai-text">{{$ai.summary}}</p>
+                </div>
+            {{end}}
+
+            {{if $ai.technology_stack}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">Технологический стек</h3>
+                    {{if $ai.technology_stack.description}}
+                        <p class="ai-text">{{$ai.technology_stack.description}}</p>
+                    {{end}}
+                    {{if $ai.technology_stack.components}}
+                        <div class="ai-tags">
+                            {{range $ai.technology_stack.components}}
+                                <span class="ai-tag">{{.}}</span>
+                            {{end}}
+                        </div>
+                    {{end}}
+                </div>
+            {{end}}
+
+            {{/* === Сценарий 1 (passive_ai): нейтральный обзор === */}}
+            {{if $ai.surface_overview}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">Поверхность атаки</h3>
+                    {{if $ai.surface_overview.scale}}
+                        <p class="ai-text"><span class="ai-label">Масштаб.</span> {{$ai.surface_overview.scale}}</p>
+                    {{end}}
+                    {{if $ai.surface_overview.public_endpoints}}
+                        <p class="ai-text"><span class="ai-label">Публичные эндпоинты.</span> {{$ai.surface_overview.public_endpoints}}</p>
+                    {{end}}
+                    {{if $ai.surface_overview.protected_endpoints}}
+                        <p class="ai-text"><span class="ai-label">Защищённые эндпоинты.</span> {{$ai.surface_overview.protected_endpoints}}</p>
+                    {{end}}
+                    {{if $ai.surface_overview.extracted_entities}}
+                        <p class="ai-text"><span class="ai-label">Извлечённые сущности.</span> {{$ai.surface_overview.extracted_entities}}</p>
+                    {{end}}
+                </div>
+            {{end}}
+
+            {{if $ai.notable_findings}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">Примечательные находки</h3>
+                    {{range $ai.notable_findings}}
+                        <div class="ai-finding">
+                            <div class="ai-finding-head">
+                                <span class="ai-finding-category">{{.category}}</span>
+                            </div>
+                            <p class="ai-text">{{.observation}}</p>
+                            {{if .evidence}}
+                                <p class="ai-evidence">Источник: <code>{{.evidence}}</code></p>
+                            {{end}}
+                        </div>
+                    {{end}}
+                </div>
+            {{end}}
+
+            {{/* === Сценарий 3 (hypothesis_ai): экспертные гипотезы === */}}
+            {{if $ai.hypotheses}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">Гипотезы об уязвимостях</h3>
+                    {{range $ai.hypotheses}}
+                        <div class="ai-finding">
+                            <div class="ai-finding-head">
+                                <span class="ai-severity ai-severity-{{.severity}}">{{.severity}}</span>
+                                <span class="ai-finding-title">{{.title}}</span>
+                                {{if .vector_type}}
+                                    <span class="ai-vector-type">{{.vector_type}}</span>
+                                {{end}}
+                            </div>
+                            <p class="ai-text">{{.description}}</p>
+                            {{if .evidence}}
+                                <p class="ai-evidence">Источник: <code>{{.evidence}}</code></p>
+                            {{end}}
+                        </div>
+                    {{end}}
+                </div>
+            {{end}}
+
+            {{if $ai.attack_vectors}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">Векторы атак</h3>
+                    {{range $ai.attack_vectors}}
+                        <div class="ai-finding">
+                            <div class="ai-finding-head">
+                                <span class="ai-finding-title">{{.title}}</span>
+                                {{if .target}}
+                                    <code class="ai-vector-target">{{.target}}</code>
+                                {{end}}
+                            </div>
+                            <p class="ai-text">{{.description}}</p>
+                            {{if .steps}}
+                                <ol class="ai-steps">
+                                    {{range .steps}}
+                                        <li>{{.}}</li>
+                                    {{end}}
+                                </ol>
+                            {{end}}
+                        </div>
+                    {{end}}
+                </div>
+            {{end}}
+
+            {{if $ai.next_steps}}
+                <div class="ai-section">
+                    <h3 class="ai-section-title">План дальнейших шагов</h3>
+                    <ol class="ai-next-steps">
+                        {{range $ai.next_steps}}
+                            <li>
+                                <span class="ai-priority">#{{.priority}}</span>
+                                <div class="ai-next-step-body">
+                                    <p class="ai-text"><strong>{{.action}}</strong></p>
+                                    {{if .reason}}
+                                        <p class="ai-reason">{{.reason}}</p>
+                                    {{end}}
+                                </div>
+                            </li>
+                        {{end}}
+                    </ol>
+                </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+
+</div>
+{{end}}

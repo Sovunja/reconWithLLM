@@ -1,0 +1,51 @@
+<div class="panel-head">
+    <h2 class="panel-title panel-title-sm">Q&A с ИИ</h2>
+    <span class="panel-sub">Задайте вопрос — модель ответит на основе собранных данных</span>
+</div>
+
+{{$messages := .ChatHistory}}
+<div class="qa-thread">
+    {{if not $messages}}
+    <div class="qa-empty">
+        <span class="qa-empty-glyph">◌</span>
+        <span>История диалога пуста. Задайте первый вопрос ниже.</span>
+    </div>
+    {{else}}
+    {{range $messages}}
+    <div class="qa-message qa-message-{{.Role}}">
+        <div class="qa-message-head">
+            <span class="qa-message-role">
+                {{if eq .Role "user"}}Вы{{else}}ИИ{{end}}
+            </span>
+            <span class="qa-message-time">{{formatTime .Timestamp}}</span>
+        </div>
+        <div class="qa-message-body">{{.Content}}</div>
+    </div>
+    {{end}}
+    {{end}}
+</div>
+
+<form class="qa-form"
+      hx-post="/scan-ask/{{.ID}}"
+      hx-target="#qa-section"
+      hx-swap="innerHTML"
+      hx-disabled-elt="find textarea, find button"
+      hx-indicator="#qa-spinner">
+    <textarea class="qa-input"
+              name="question"
+              placeholder="Например: какие технологии обнаружены? Покажи защищённые эндпоинты в виде таблицы."
+              rows="3"
+              required></textarea>
+    <div class="qa-form-actions">
+        <span id="qa-spinner" class="qa-spinner htmx-indicator">
+            <span class="qa-spinner-dot"></span>
+            <span class="qa-spinner-dot"></span>
+            <span class="qa-spinner-dot"></span>
+            <span class="qa-spinner-text">ИИ думает</span>
+        </span>
+        <button type="submit" class="btn btn-primary">
+            <span class="btn-glyph">▸</span>
+            <span>Спросить</span>
+        </button>
+    </div>
+</form>
