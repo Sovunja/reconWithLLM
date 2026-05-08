@@ -12,8 +12,6 @@ import (
 )
 
 // SubfinderModule — адаптер для ProjectDiscovery subfinder.
-// Не изобретает велосипед: запускает внешний бинарник через execrunner
-// и нормализует его NDJSON-вывод в единую модель Subdomain.
 type SubfinderModule struct {
 	kernel *core.Kernel
 }

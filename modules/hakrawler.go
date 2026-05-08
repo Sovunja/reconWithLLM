@@ -15,9 +15,6 @@ import (
 // Простой надёжный краулер: рекурсивный обход ссылок без headless-браузера,
 // без jsluice, без долгих парсингов. Идеален для recon-задачи: даёт чистый
 // список URL за минимальное время.
-//
-// Замена katana, который плохо себя вёл на минифицированных Angular SPA
-// (зависал при парсинге больших JS-чанков).
 type HakrawlerModule struct {
 	kernel *core.Kernel
 }
@@ -92,13 +89,13 @@ func (m *HakrawlerModule) Run(ctx context.Context, scan *core.ScanContext) error
 		Bin: "hakrawler",
 		Args: []string{
 			"-d", fmt.Sprintf("%d", depth), // глубина обхода
-			"-t", "20",                     // threads
-			"-timeout", "5",                // таймаут на запрос
-			"-subs",                        // включать поддомены
-			"-u",                           // только уникальные URL
+			"-t", "20", // threads
+			"-timeout", "5", // таймаут на запрос
+			"-subs", // включать поддомены
+			"-u",    // только уникальные URL
 		},
 		Timeout:  timeout,
-		Stdin:    scan.Target,  // hakrawler читает целевые URL из stdin
+		Stdin:    scan.Target, // hakrawler читает целевые URL из stdin
 		OnLine:   onLine,
 		OnStderr: onStderr,
 	})

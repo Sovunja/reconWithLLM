@@ -21,15 +21,6 @@ import (
 
 // ResponseFetcherModule скачивает тела HTTP-ответов для последующего
 // текстового анализа (content_extractor, openapi-парсер и т.д.).
-//
-// Почему отдельный модуль, а не доработка httpx:
-//   1) httpx у нас уже отработал на этапе detection (заголовки, технологии).
-//      Запускать его второй раз ради тел — двойная работа.
-//   2) Нужны жёсткие лимиты на объём (защита от runaway-сканов больших таргетов).
-//   3) Фильтрация по content-type и статусам должна быть гибкой.
-//
-// Тела сохраняются на диск, а не в ScanContext — это критично для крупных
-// сканов: 50 URL × 2 МБ = 100 МБ в памяти процесса быстро приведут к OOM.
 type ResponseFetcherModule struct {
 	dataDir string
 }
@@ -58,8 +49,8 @@ func (m *ResponseFetcherModule) Init(ctx context.Context, kernel *core.Kernel) e
 
 // Конфигурация (мягкие лимиты — приоритет демо).
 const (
-	fetcherMaxURLs        = 200             // было 50 — мало для крупных стендов
-	fetcherMaxBodyBytes   = 5 * 1024 * 1024 // 5 МБ на один ответ — Angular main.js может быть таким
+	fetcherMaxURLs        = 200              // было 50 — мало для крупных стендов
+	fetcherMaxBodyBytes   = 5 * 1024 * 1024  // 5 МБ на один ответ — Angular main.js может быть таким
 	fetcherTotalBudget    = 50 * 1024 * 1024 // 50 МБ суммарно
 	fetcherConcurrency    = 10
 	fetcherRequestTimeout = 15 * time.Second

@@ -14,20 +14,10 @@ import (
 	"recon/internal/ollama"
 )
 
-// AIAnalyzerModule — модуль ИИ-анализа recon-данных.
-// Реализует core.Module и core.EventSubscriber.
-//
-// Текущая реализация поддерживает Сценарий 1 (passive_ai): после завершения
-// сбора данных всеми модулями pipeline'а формируется компактная сводка,
-// отправляется в локальную Llama 3.1 8B через Ollama, и результат
-// складывается в ScanContext под ключом ai_analysis.
-//
-// Сценарии agentic_ai (через шину событий) и hypothesis_ai будут
-// реализованы в следующих этапах работы.
 type AIAnalyzerModule struct {
 	kernel *core.Kernel
 	llm    *ollama.Client
-	online bool // true если Ping в Init прошёл успешно
+	online bool
 }
 
 func NewAIAnalyzerModule() *AIAnalyzerModule { return &AIAnalyzerModule{} }
@@ -53,13 +43,6 @@ func (m *AIAnalyzerModule) Init(ctx context.Context, kernel *core.Kernel) error 
 	return nil
 }
 
-// AIAnalysis — типизированный результат анализа от LLM в Сценарии 1.
-// Структура жёстко фиксирована в systemPromptPassive, чтобы модель
-// возвращала JSON, который можно прямо отдать в UI и в отчёт.
-//
-// Намеренно нет полей risk_observations и recommendations — это
-// территория Сценария 3 (hypothesis_ai). В Сценарии 1 модель работает
-// как нейтральный аналитический помощник.
 type AIAnalysis struct {
 	Summary         string           `json:"summary"`
 	TechnologyStack TechnologyStack  `json:"technology_stack"`
@@ -72,17 +55,13 @@ type TechnologyStack struct {
 	Components  []string `json:"components"`
 }
 
-// SurfaceOverview — нейтральное описание поверхности без оценок
-// "опасно/безопасно". Только факты и цифры.
 type SurfaceOverview struct {
-	Scale              string `json:"scale"`               // подсчёты, распределения статусов
-	PublicEndpoints    string `json:"public_endpoints"`    // что доступно без авторизации
-	ProtectedEndpoints string `json:"protected_endpoints"` // что требует авторизации
-	ExtractedEntities  string `json:"extracted_entities"`  // обзор контактов, имён, версий
+	Scale              string `json:"scale"`
+	PublicEndpoints    string `json:"public_endpoints"`
+	ProtectedEndpoints string `json:"protected_endpoints"`
+	ExtractedEntities  string `json:"extracted_entities"`
 }
 
-// NotableFinding — отдельный примечательный факт. Не "уязвимость",
-// а наблюдение, на которое стоит обратить внимание человеку-аналитику.
 type NotableFinding struct {
 	Category    string `json:"category"`    // endpoints | technology | content | structure
 	Observation string `json:"observation"` // нейтральное описание факта
@@ -97,10 +76,10 @@ type NotableFinding struct {
 // Ключи JSON остаются английскими (для стабильного парсинга
 // модели Llama 3.1 8B), значения полей — на русском языке.
 type HypothesisAnalysis struct {
-	Summary     string         `json:"summary"`     // общая оценка цели в 2-3 предложениях
-	Hypotheses  []Hypothesis   `json:"hypotheses"`  // потенциальные уязвимости
+	Summary       string         `json:"summary"`        // общая оценка цели в 2-3 предложениях
+	Hypotheses    []Hypothesis   `json:"hypotheses"`     // потенциальные уязвимости
 	AttackVectors []AttackVector `json:"attack_vectors"` // конкретные векторы атак с шагами
-	NextSteps   []NextStep     `json:"next_steps"`  // приоритизированный план
+	NextSteps     []NextStep     `json:"next_steps"`     // приоритизированный план
 }
 
 // Hypothesis — гипотеза о потенциальной уязвимости.
@@ -263,12 +242,9 @@ func (m *AIAnalyzerModule) HandleEvent(ctx context.Context, ev core.Event, scan 
 // диалога и собранных данных скана. Возвращает текст ответа.
 //
 // Контекст подаётся по трёхуровневой стратегии:
-//   1) Всегда — компактная сводка по сканированию.
-//   2) По ключевым словам в вопросе — сырые данные релевантной секции.
-//   3) Fallback — только сводка, если ключевые слова не сработали.
-//
-// История ограничена последними N сообщениями, чтобы не превысить
-// контекстное окно при долгом диалоге.
+//  1. Всегда — компактная сводка по сканированию.
+//  2. По ключевым словам в вопросе — сырые данные релевантной секции.
+//  3. Fallback — только сводка, если ключевые слова не сработали.
 func (m *AIAnalyzerModule) Ask(
 	ctx context.Context,
 	scan *core.ScanContext,
@@ -323,9 +299,6 @@ func (m *AIAnalyzerModule) Ask(
 	llmCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 
-	// Выбор системного промпта зависит от сценария скана.
-	// В hypothesis_ai модель работает как эксперт-пентестер,
-	// в passive_ai (и любом другом) — как аналитический навигатор.
 	systemPrompt := systemPromptQA
 	if scan.Scenario == "hypothesis_ai" {
 		systemPrompt = systemPromptHypothesisQA
@@ -349,23 +322,20 @@ func (m *AIAnalyzerModule) Ask(
 }
 
 // systemPromptQA — системный промпт для Q&A режима в Сценарии 1.
-const systemPromptQA = `You are an analytical assistant helping a penetration tester
-explore reconnaissance data about a target. You have access to:
-1. A summary of the reconnaissance report.
-2. Optionally, raw JSON of specific sections relevant to the question.
-3. The conversation history so far.
+const systemPromptQA = `Ты — аналитический ассистент, помогающий специалисту по тестированию
+на проникновение работать с данными разведки целевой системы.
+В твоём распоряжении:
+  1) Сводка отчёта о разведке.
+  2) При необходимости — фрагменты исходного JSON-отчёта,
+     относящиеся к вопросу пользователя.
+  3) История текущего диалога.
 
-Rules:
-- Answer based ONLY on the data provided. If the data does not contain
-  the answer, say so explicitly.
-- The user may ask in English or Russian. Reply in the same language
-  the user used.
-- Be concise but complete. Use markdown formatting when helpful
-  (bullet lists, tables, inline code for paths and headers).
-- Do NOT invent endpoints, technologies, emails, or entities that are
-  not in the data.
-- You are a data navigator, not a security expert. Stay descriptive,
-  do not suggest exploits or rate vulnerabilities by severity.`
+Правила:
+— Опирайся ТОЛЬКО на предоставленные данные. Если в данных нет ответа
+  на вопрос — прямо сообщи об этом, не домысливай.
+— Все ответы — на русском языке, независимо от языка вопроса.
+— Отвечай по существу и кратко. Используй разметку Markdown
+  для списков и блоков кода.`
 
 // pickRelevantSections возвращает сырые JSON-куски ScanContext, релевантные
 // вопросу. Если ничего не подошло — возвращает пустую строку, и тогда
@@ -474,10 +444,6 @@ func truncateForContext(key string, v interface{}) interface{} {
 //
 // Цель — дать пентестеру удобный для чтения обзор и подготовить почву
 // для последующих интерактивных запросов через Q&A интерфейс.
-//
-// Промпт на русском языке, текстовые значения JSON ожидаются на русском,
-// имена ключей остаются английскими для стабильного парсинга — это
-// гибридная схема, аналогичная Сценарию 3 (hypothesis_ai).
 const systemPromptPassive = `Ты — аналитик данных разведки. На вход ты получаешь
 структурированные данные, собранные автоматическими инструментами разведки
 веб-цели. Твоя роль — помочь пентестеру ориентироваться в этих данных и
@@ -622,11 +588,6 @@ const systemPromptHypothesisQA = `Ты — эксперт по тестиров�
 - Не выдумывай эндпоинты, технологии или сущности, которых нет в данных.`
 
 // --- Подготовка сводки данных для LLM ---
-
-// buildScanSummary преобразует ScanContext в компактный текстовый
-// блок для LLM. Сырые JSON-структуры не передаются: они слишком
-// объёмны и дают модели много шума. Вместо этого формируется
-// человекочитаемая сводка с выделенными секциями.
 func buildScanSummary(scan *core.ScanContext) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Target: %s\n", scan.Target)
@@ -658,9 +619,6 @@ func buildScanSummary(scan *core.ScanContext) string {
 	}
 
 	// Валидированные API: разбивка по группам с поимённым списком путей.
-	// Для alive и auth_required перечисляем ВСЕ эндпоинты построчно —
-	// модель должна видеть точные пути, чтобы не выдумывать их в анализе.
-	// Для server_error и прочих групп даём агрегированный список.
 	if v, ok := scan.Get("validated_endpoints"); ok {
 		if eps, ok := v.([]ValidatedEndpoint); ok && len(eps) > 0 {
 			sb.WriteString("== Validated API paths ==\n")
@@ -752,9 +710,6 @@ func buildScanSummary(scan *core.ScanContext) string {
 	return sb.String()
 }
 
-// --- Утилиты ---
-
-// formatCodes форматирует карту статус-кодов как "200=130, 401=9, 500=12".
 func formatCodes(codes map[int]int) string {
 	keys := make([]int, 0, len(codes))
 	for k := range codes {
@@ -805,13 +760,6 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
-// structToMap конвертирует структуру в map[string]interface{}
-// через JSON-маршалинг. Используется для передачи в html/template,
-// чтобы поля были доступны по JSON-именам (с маленькой буквы),
-// а не по именам Go-полей (с большой буквы).
-//
-// Накладные расходы (двойной маршалинг) приемлемы — мы делаем это
-// один раз на скан, а не в горячем пути.
 func structToMap(v interface{}) map[string]interface{} {
 	data, err := json.Marshal(v)
 	if err != nil {

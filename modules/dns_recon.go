@@ -19,11 +19,6 @@ import (
 // (через MX-записи) и собирает дополнительный контекст:
 // IP-адреса (A/AAAA), namespace-серверы (NS), TXT-записи
 // (часто содержат SPF, упоминания Google Workspace, Office 365).
-//
-// Для целевых хостов внутри Docker-сети (juiceshop) DNS-разведка
-// не даёт ничего полезного — модуль элегантно завершается без
-// данных и не ломает pipeline. Для публичных доменов даёт настоящий
-// recon-результат.
 type DNSReconModule struct {
 	kernel *core.Kernel
 }
@@ -31,7 +26,7 @@ type DNSReconModule struct {
 // DNSRecord — нормализованная DNS-запись.
 type DNSRecord struct {
 	Host  string   `json:"host"`
-	Type  string   `json:"type"`  // A, AAAA, MX, TXT, NS, CNAME
+	Type  string   `json:"type"` // A, AAAA, MX, TXT, NS, CNAME
 	Value []string `json:"value"`
 }
 

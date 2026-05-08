@@ -9,13 +9,6 @@ import (
 
 // CommonPathsModule добавляет в ScanContext список типичных
 // эндпоинтов для проверки (admin-панели, API, конфиги, и т.д.).
-//
-// Это не сканирование — это просто список кандидатов, которые
-// httpx потом проверит и оставит только живые. Подход называется
-// "content discovery via wordlist" и стандартен в pentest-recon.
-//
-// Список основан на типичных паттернах REST API + специфика Juice Shop.
-// В будущем можно расширить через большой wordlist (SecLists).
 type CommonPathsModule struct{}
 
 func NewCommonPathsModule() *CommonPathsModule { return &CommonPathsModule{} }

@@ -1,11 +1,5 @@
 // Package execrunner — обёртка над os/exec для запуска внешних
 // инструментов разведки (subfinder, httpx, hakrawler и т.д.).
-//
-// Решает четыре проблемы, которые в наивной реализации приводят к багам:
-//   1) Утечка дочерних процессов: убиваем всю process group, а не только лидера.
-//   2) Зависание на медленных источниках: жёсткий таймаут через context.
-//   3) Реалтайм-обработка: построчное чтение stdout, не дожидаясь Wait.
-//   4) Диагностика: stderr собирается в буфер и возвращается при ошибке.
 package execrunner
 
 import (
@@ -52,15 +46,6 @@ type Result struct {
 }
 
 // Run запускает процесс по спецификации.
-//
-// Контракт по отмене:
-//   - ctx.Done() приводит к SIGTERM всей process group, через 5 сек — SIGKILL.
-//   - Spec.Timeout работает аналогично, через дочерний context.WithTimeout.
-//
-// Возвращает ошибку, если процесс не запустился, упал по сигналу или
-// завершился с ненулевым exit code (вызывающая сторона может проверить
-// errors.As(&exec.ExitError{}) — некоторые тулзы используют exit code
-// для передачи статуса, и это не всегда «ошибка»).
 func Run(ctx context.Context, spec Spec) (*Result, error) {
 	if spec.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -134,8 +119,6 @@ func Run(ctx context.Context, spec Spec) (*Result, error) {
 	}()
 
 	// Чтение stdout и stderr — параллельно в отдельных горутинах.
-	// Если читать только один пайп, второй может переполниться и
-	// заблокировать процесс.
 	stdoutBuf := &bytes.Buffer{}
 	stderrBuf := &bytes.Buffer{}
 
@@ -160,8 +143,8 @@ func Run(ctx context.Context, spec Spec) (*Result, error) {
 		_ = streamLines(stderrPipe, dst, spec.OnStderr)
 	}()
 
-	ioWG.Wait()              // дожидаемся EOF на обоих пайпах
-	waitErr := cmd.Wait()    // потом собираем статус процесса
+	ioWG.Wait()           // дожидаемся EOF на обоих пайпах
+	waitErr := cmd.Wait() // потом собираем статус процесса
 	close(doneCh)
 	killWG.Wait()
 
